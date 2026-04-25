@@ -1,9 +1,9 @@
-# h-to-m
+# h-to-md
 
 Fast server-side HTML to Markdown conversion for Node.js applications.
 
 ```ts
-import { htmlToMarkdown } from "h-to-m";
+import { htmlToMarkdown } from "h-to-md";
 
 const markdown = htmlToMarkdown("<h1>Hello</h1><p><strong>fast</strong> output.</p>");
 ```
@@ -34,12 +34,12 @@ Options:
 ## CLI
 
 ```sh
-h-to-m input.html > output.md
-cat input.html | h-to-m
-npx h-to-m input.html
+h-to-md input.html > output.md
+cat input.html | h-to-md
+npx h-to-md input.html
 ```
 
-After publish, the CLI command is `npx h-to-m`.
+After publish, the CLI command is `npx h-to-md`.
 
 ## Development
 
@@ -57,4 +57,3 @@ Releases are triggered by pushing a semver tag (e.g. `v1.0.0`):
 git tag v1.0.0
 git push origin v1.0.0
 ```
-
