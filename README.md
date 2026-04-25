@@ -31,6 +31,127 @@ Options:
 - `codeBlockFence`: fenced code marker, defaults to `` ``` ``.
 - `preserveImages`: include image markdown, defaults to `true`.
 
+## Markdown Negotiation
+
+Many AI agents request Markdown directly:
+
+```sh
+curl -H "Accept: text/markdown" https://example.com/docs
+```
+
+`h-to-md` can sit at the server boundary: render the normal HTML page, convert it when the request prefers Markdown, and return `text/markdown`.
+
+### Next.js App Router
+
+```ts
+// app/docs/route.ts
+import { createElement } from "react";
+import { htmlToMarkdown } from "h-to-md";
+import { renderToStaticMarkup } from "react-dom/server";
+import { DocsPage } from "./DocsPage";
+
+export async function GET(request: Request) {
+  const html = renderToStaticMarkup(createElement(DocsPage));
+
+  if (request.headers.get("accept")?.includes("text/markdown")) {
+    return new Response(htmlToMarkdown(html, { baseUrl: request.url }), {
+      headers: {
+        "content-type": "text/markdown; charset=utf-8",
+        "vary": "accept",
+      },
+    });
+  }
+
+  return new Response(`<!doctype html>${html}`, {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "vary": "accept",
+    },
+  });
+}
+```
+
+### SvelteKit
+
+```ts
+// src/routes/docs/+server.ts
+import { htmlToMarkdown } from "h-to-md";
+import { render } from "svelte/server";
+import DocsPage from "./DocsPage.svelte";
+import type { RequestHandler } from "./$types";
+
+export const GET: RequestHandler = ({ request, url }) => {
+  const { body, head } = render(DocsPage);
+  const html = `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
+
+  if (request.headers.get("accept")?.includes("text/markdown")) {
+    return new Response(htmlToMarkdown(html, { baseUrl: url.href }), {
+      headers: {
+        "content-type": "text/markdown; charset=utf-8",
+        "vary": "accept",
+      },
+    });
+  }
+
+  return new Response(html, {
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "vary": "accept",
+    },
+  });
+};
+```
+
+### Express
+
+```ts
+import express from "express";
+import { htmlToMarkdown } from "h-to-md";
+import { renderPage } from "./render-page.js";
+
+const app = express();
+
+app.get("/docs", async (req, res) => {
+  const html = await renderPage();
+
+  res.vary("accept");
+
+  if (req.accepts(["text/markdown", "html"]) === "text/markdown") {
+    res.type("text/markdown").send(htmlToMarkdown(html, {
+      baseUrl: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+    }));
+    return;
+  }
+
+  res.type("html").send(html);
+});
+```
+
+### Hono
+
+```ts
+import { Hono } from "hono";
+import { htmlToMarkdown } from "h-to-md";
+import { renderPage } from "./render-page";
+
+const app = new Hono();
+
+app.get("/docs", async (c) => {
+  const html = await renderPage();
+
+  if (c.req.header("accept")?.includes("text/markdown")) {
+    return c.text(htmlToMarkdown(html, { baseUrl: c.req.url }), 200, {
+      "content-type": "text/markdown; charset=utf-8",
+      "vary": "accept",
+    });
+  }
+
+  return c.html(html, 200, { "vary": "accept" });
+});
+
+export default app;
+```
+
 ## CLI
 
 ```sh
