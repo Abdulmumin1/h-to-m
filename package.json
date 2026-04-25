@@ -1,6 +1,6 @@
 {
   "name": "h-to-m",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Extremely fast server-side HTML to Markdown converter.",
   "repository": {
     "type": "git",
