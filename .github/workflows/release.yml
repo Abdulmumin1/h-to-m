@@ -33,11 +33,18 @@ jobs:
       - name: Setup npm for trusted publishing
         run: npm install --global npm@^11.5.1
 
+      - name: Set package version from tag
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          VERSION="${RELEASE_VERSION#v}"
+          npm version "$VERSION" --no-git-tag-version
+
       - name: Install dependencies
         run: npm ci
 
       - name: Run tests
-        run: npm test
+        run: npm run check
 
       - name: Publish to npm
         run: npm publish --provenance
