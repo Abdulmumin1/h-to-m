@@ -36,7 +36,10 @@ Options:
 ```sh
 h-to-m input.html > output.md
 cat input.html | h-to-m
+npx h-to-m input.html
 ```
+
+After publish, the CLI command is `npx h-to-m`.
 
 ## Development
 
@@ -45,3 +48,13 @@ npm install
 npm run check
 npm run bench
 ```
+
+## Releases
+
+This repo uses Changesets for versioning and changelog management.
+
+```sh
+npm run changeset
+```
+
+Publishing is handled by GitHub Actions with npm trusted publishing via OIDC. Per npm's trusted publisher flow, configure the package on npmjs.com to trust the `release.yml` workflow in this repository.
