@@ -4,11 +4,11 @@
   "description": "Extremely fast server-side HTML to Markdown converter.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Abdulmumin1/h-to-m.git"
+    "url": "git+https://github.com/Abdulmumin1/h-to-md.git"
   },
-  "homepage": "https://github.com/Abdulmumin1/h-to-m#readme",
+  "homepage": "https://github.com/Abdulmumin1/h-to-md#readme",
   "bugs": {
-    "url": "https://github.com/Abdulmumin1/h-to-m/issues"
+    "url": "https://github.com/Abdulmumin1/h-to-md/issues"
   },
   "type": "module",
   "main": "./src/index.js",
