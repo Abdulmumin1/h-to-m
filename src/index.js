@@ -114,7 +114,7 @@ export function htmlToMarkdownTurbo(html, options = {}) {
 class Converter {
   constructor(options) {
     this.options = options;
-    this.out = "";
+    this.out = [];
     this.listStack = [];
     this.linkStack = [];
     this.headingStack = [];
@@ -154,7 +154,7 @@ class Converter {
     }
 
     if (textStart < html.length) this.text(html.slice(textStart));
-    return cleanup(this.out);
+    return cleanup(this.out.join(""));
   }
 
   tag(raw, rawStart, rawEnd) {
@@ -276,7 +276,7 @@ class Converter {
         const href = this.resolveUrl(attrs.href);
         if (href) {
           this.write("[");
-          this.linkStack.push({ href, title: attrs.title, start: this.size });
+          this.linkStack.push({ href, title: attrs.title, start: this.size, startChunk: this.out.length });
         }
         break;
       }
@@ -404,7 +404,7 @@ class Converter {
     const link = this.linkStack.pop();
     if (!link) return;
     if (this.size === link.start) {
-      this.out = this.out.slice(0, link.start - 1);
+      this.out.length = link.startChunk - 1;
       this.size--;
       return;
     }
@@ -466,16 +466,33 @@ class Converter {
 
   trimTrailingSpaces() {
     if (!this.lastWasSpace) return;
-    const next = trimRightSpaces(this.out);
-    this.size = next.length;
-    this.out = next;
+    while (this.out.length > 0) {
+      const last = this.out[this.out.length - 1];
+      const next = trimRightSpaces(last);
+      if (next.length === last.length) break;
+      this.size -= last.length - next.length;
+      if (next.length === 0) this.out.pop();
+      else {
+        this.out[this.out.length - 1] = next;
+        break;
+      }
+    }
     this.lastWasSpace = false;
   }
 
   trimTrailingNewlines() {
     if (this.tailNewlines === 0) return;
-    this.out = this.out.slice(0, this.size - this.tailNewlines);
-    this.size -= this.tailNewlines;
+    while (this.out.length > 0 && this.tailNewlines > 0) {
+      const last = this.out[this.out.length - 1];
+      const next = trimRightNewlines(last);
+      if (next.length === last.length) break;
+      this.size -= last.length - next.length;
+      if (next.length === 0) this.out.pop();
+      else {
+        this.out[this.out.length - 1] = next;
+        break;
+      }
+    }
     this.tailNewlines = 0;
     this.lastWasSpace = false;
   }
@@ -492,7 +509,7 @@ class Converter {
       this.blockquoteDepth > 0 && this.tailNewlines > 0
         ? `${"> ".repeat(this.blockquoteDepth)}${value}`
         : value;
-    this.out += prefixed;
+    this.out.push(prefixed);
     this.size += prefixed.length;
     const lastCode = prefixed.charCodeAt(prefixed.length - 1);
     this.lastWasSpace = lastCode === 32 || lastCode === 9;
@@ -500,7 +517,16 @@ class Converter {
   }
 
   endsWith(suffix) {
-    return this.out.endsWith(suffix);
+    let remaining = suffix.length;
+    for (let i = this.out.length - 1; i >= 0 && remaining > 0; i--) {
+      const chunk = this.out[i];
+      const take = Math.min(chunk.length, remaining);
+      if (chunk.slice(chunk.length - take) !== suffix.slice(remaining - take, remaining)) {
+        return false;
+      }
+      remaining -= take;
+    }
+    return remaining === 0;
   }
 }
 

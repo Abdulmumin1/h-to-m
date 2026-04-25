@@ -170,6 +170,8 @@ npm run check
 npm run bench
 ```
 
+`npm run bench` now reports average and `p95` timings across several HTML shapes, not just one repeated sample.
+
 ## Releases
 
 Releases are triggered by pushing a semver tag (e.g. `v1.0.0`):
