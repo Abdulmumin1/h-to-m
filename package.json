@@ -1,20 +1,35 @@
 {
   "name": "h-to-m",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Extremely fast server-side HTML to Markdown converter.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abdulmumin1/h-to-m.git"
+  },
+  "homepage": "https://github.com/Abdulmumin1/h-to-m#readme",
+  "bugs": {
+    "url": "https://github.com/Abdulmumin1/h-to-m/issues"
+  },
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "bin": {
     "h-to-m": "./src/cli.js"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "files": [
     "src"
   ],
   "scripts": {
+    "changeset": "changeset",
     "test": "node --test",
     "bench": "node bench/bench.js",
-    "check": "npm test"
+    "check": "npm test",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
   "keywords": [
     "html",
@@ -24,7 +39,11 @@
     "fast"
   ],
   "license": "MIT",
+  "devDependencies": {
+    "@changesets/cli": "^2.31.0"
+  },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "packageManager": "npm@10.9.4"
 }
