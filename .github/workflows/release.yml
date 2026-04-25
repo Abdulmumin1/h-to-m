@@ -2,15 +2,16 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
-  pull-requests: write
   id-token: write
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   release:
@@ -35,11 +36,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Create release pull request or publish
-        id: changesets
-        uses: changesets/action@v1
+      - name: Run tests
+        run: npm test
+
+      - name: Publish to npm
+        run: npm publish --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
         with:
-          version: npm run version-packages
-          publish: npm run release
-          title: Release packages
-          commit: Release packages
+          generate_release_notes: true

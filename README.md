@@ -51,10 +51,10 @@ npm run bench
 
 ## Releases
 
-This repo uses Changesets for versioning and changelog management.
+Releases are triggered by pushing a semver tag (e.g. `v1.0.0`):
 
 ```sh
-npm run changeset
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
-Publishing is handled by GitHub Actions with npm trusted publishing via OIDC. Per npm's trusted publisher flow, configure the package on npmjs.com to trust the `release.yml` workflow in this repository.

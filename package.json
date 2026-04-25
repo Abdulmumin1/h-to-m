@@ -24,12 +24,10 @@
     "src"
   ],
   "scripts": {
-    "changeset": "changeset",
     "test": "node --test",
     "bench": "node bench/bench.js",
     "check": "npm test",
-    "version-packages": "changeset version",
-    "release": "changeset publish"
+    "prepublishOnly": "npm test"
   },
   "keywords": [
     "html",
@@ -39,9 +37,6 @@
     "fast"
   ],
   "license": "MIT",
-  "devDependencies": {
-    "@changesets/cli": "^2.31.0"
-  },
   "engines": {
     "node": ">=18"
   },
