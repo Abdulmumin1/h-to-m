@@ -1,0 +1,30 @@
+{
+  "name": "h-to-m",
+  "version": "0.1.0",
+  "description": "Extremely fast server-side HTML to Markdown converter.",
+  "type": "module",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "bin": {
+    "h-to-m": "./src/cli.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "bench": "node bench/bench.js",
+    "check": "npm test"
+  },
+  "keywords": [
+    "html",
+    "markdown",
+    "converter",
+    "server",
+    "fast"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
