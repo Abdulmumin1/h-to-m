@@ -43,6 +43,8 @@ curl -H "Accept: text/markdown" https://example.com/docs
 
 ### Next.js App Router
 
+Next.js App Router does not have a global response-transform hook, so negotiation is typically done at the route level:
+
 ```ts
 // app/docs/route.ts
 import { createElement } from "react";
@@ -52,8 +54,9 @@ import { DocsPage } from "./DocsPage";
 
 export async function GET(request: Request) {
   const html = renderToStaticMarkup(createElement(DocsPage));
+  const isMarkdown = request.headers.get("accept")?.includes("text/markdown");
 
-  if (request.headers.get("accept")?.includes("text/markdown")) {
+  if (isMarkdown) {
     return new Response(htmlToMarkdown(html, { baseUrl: request.url }), {
       headers: {
         "content-type": "text/markdown; charset=utf-8",
@@ -74,31 +77,33 @@ export async function GET(request: Request) {
 ### SvelteKit
 
 ```ts
-// src/routes/docs/+server.ts
+// src/hooks.server.ts
 import { htmlToMarkdown } from "h-to-md";
-import { render } from "svelte/server";
-import DocsPage from "./DocsPage.svelte";
-import type { RequestHandler } from "./$types";
+import type { Handle } from "@sveltejs/kit";
 
-export const GET: RequestHandler = ({ request, url }) => {
-  const { body, head } = render(DocsPage);
-  const html = `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
+export const handle: Handle = async ({ event, resolve }) => {
+  const response = await resolve(event);
 
-  if (request.headers.get("accept")?.includes("text/markdown")) {
-    return new Response(htmlToMarkdown(html, { baseUrl: url.href }), {
-      headers: {
-        "content-type": "text/markdown; charset=utf-8",
-        "vary": "accept",
-      },
-    });
+  if (response.headers.get("content-type")?.startsWith("text/html")) {
+    response.headers.set("vary", "accept");
+
+    if (
+      event.request.headers.get("accept")?.includes("text/markdown") &&
+      event.request.method === "GET"
+    ) {
+      const html = await response.text();
+      return new Response(htmlToMarkdown(html, { baseUrl: event.url.href }), {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          "content-type": "text/markdown; charset=utf-8",
+          "vary": "accept",
+        },
+      });
+    }
   }
 
-  return new Response(html, {
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "vary": "accept",
-    },
-  });
+  return response;
 };
 ```
 
@@ -107,23 +112,32 @@ export const GET: RequestHandler = ({ request, url }) => {
 ```ts
 import express from "express";
 import { htmlToMarkdown } from "h-to-md";
-import { renderPage } from "./render-page.js";
 
 const app = express();
 
-app.get("/docs", async (req, res) => {
-  const html = await renderPage();
+app.use((req, res, next) => {
+  const originalSend = res.send.bind(res);
 
-  res.vary("accept");
+  res.send = function (body) {
+    if (
+      req.method === "GET" &&
+      res.get("content-type")?.startsWith("text/html") &&
+      req.accepts(["text/markdown", "html"]) === "text/markdown"
+    ) {
+      res.removeHeader("content-length");
+      res.removeHeader("etag");
+      res.set("content-type", "text/markdown; charset=utf-8");
+      res.set("vary", "accept");
+      return originalSend(
+        htmlToMarkdown(String(body), {
+          baseUrl: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
+        })
+      );
+    }
+    return originalSend(body);
+  };
 
-  if (req.accepts(["text/markdown", "html"]) === "text/markdown") {
-    res.type("text/markdown").send(htmlToMarkdown(html, {
-      baseUrl: `${req.protocol}://${req.get("host")}${req.originalUrl}`,
-    }));
-    return;
-  }
-
-  res.type("html").send(html);
+  next();
 });
 ```
 
@@ -132,24 +146,35 @@ app.get("/docs", async (req, res) => {
 ```ts
 import { Hono } from "hono";
 import { htmlToMarkdown } from "h-to-md";
-import { renderPage } from "./render-page";
 
 const app = new Hono();
 
-app.get("/docs", async (c) => {
-  const html = await renderPage();
+app.use("*", async (c, next) => {
+  await next();
 
-  if (c.req.header("accept")?.includes("text/markdown")) {
-    return c.text(htmlToMarkdown(html, { baseUrl: c.req.url }), 200, {
-      "content-type": "text/markdown; charset=utf-8",
-      "vary": "accept",
-    });
+  const response = c.res;
+  if (!response.headers.get("content-type")?.startsWith("text/html")) return;
+
+  response.headers.set("vary", "accept");
+
+  if (
+    c.req.header("accept")?.includes("text/markdown") &&
+    c.req.method === "GET"
+  ) {
+    const html = await response.text();
+    c.res = new Response(
+      htmlToMarkdown(html, { baseUrl: c.req.url }),
+      {
+        status: response.status,
+        statusText: response.statusText,
+        headers: {
+          "content-type": "text/markdown; charset=utf-8",
+          "vary": "accept",
+        },
+      }
+    );
   }
-
-  return c.html(html, 200, { "vary": "accept" });
 });
-
-export default app;
 ```
 
 ## CLI
